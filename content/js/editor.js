@@ -148,7 +148,7 @@
             }
             console.log(_this.output_obj);
         });
-       
+        
         _this.editor_components.append(paragraph_ele);
         paragraph_ele.focus();
     }

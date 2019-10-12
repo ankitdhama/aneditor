@@ -9,7 +9,8 @@
         this.add_video_btn = document.createElement("li");
         this.add_code_btn = document.createElement("li");
         this.editor_components = document.createElement("div");
-
+        this.ctrl_validation_flags = {};
+        
         this.focused_elems_ctrls = document.createElement("div");
         this.remove_ele_ctrl = document.createElement("button");
         this.focused_element = {};
@@ -225,10 +226,18 @@
             
             //CREATE NEW CODE ELEMENT
             var pre_ele = document.createElement("pre"),
-                code_ele = document.createElement("code");
+            code_ele = document.createElement("code");
             
-            //CREATE SELECT ELEMENT FOR CODE LANGUAGE SELECTION
+            var select_error_msg = document.createElement("span");
+            select_error_msg.classList.add("__comp_error");
+            select_error_msg.textContent = "Please select code language";
+            
+            var select_wrapper = document.createElement("span");
+            select_wrapper.classList.add("__lang_selection_wrapper");
+            
             var lang_select_ele = document.createElement("select");
+            lang_select_ele.setAttribute("id", "select-ctrl-" + _uuid);
+            lang_select_ele.classList.add("__lang_selection_ctrl");
             _this.options.code_languages.unshift("select language");
             _this.options.code_languages.forEach(function(item, index) {
                 var option_ele = document.createElement("option");
@@ -236,16 +245,31 @@
                 (index === 0) ? option_ele.setAttribute("value", "") : option_ele.setAttribute("value", item);
                 lang_select_ele.appendChild(option_ele);
             });
-
-            pre_ele.appendChild(lang_select_ele);
+            
+            //ADD ONCHANGE EVENT ON SELECT ELEMENT
             lang_select_ele.addEventListener("change", function() {
-                code_ele.setAttribute("data-code-class", this.value);
+                if (this.value != '') {
+                    _this.ctrl_validation_flags[_uuid] = true;
+                    select_error_msg.style.display = "none";
+                } else {
+                    _this.ctrl_validation_flags[_uuid] = false;
+                    select_error_msg.style.display = "block";
+                }
             });
-                
+
+            select_wrapper.appendChild(lang_select_ele);
+            select_wrapper.appendChild(select_error_msg);
+            pre_ele.appendChild(select_wrapper);
+            
+            lang_select_ele.addEventListener("change", function() {
+                code_ele.setAttribute("data-style-class", this.value);
+            });
+            
             code_ele.setAttribute("contenteditable", "true");
             code_ele.setAttribute("class", "__code __placeholder");
             
             _this.output_obj[_uuid] = code_ele;
+            _this.ctrl_validation_flags[_uuid] = false;
             
             code_ele.addEventListener("keyup", function(e) {
                 if (e.target.textContent.trim() != "") {
@@ -272,17 +296,18 @@
             event.preventDefault();
         }
     }
-
+    
     editor.prototype.get_html = function () {
         var op_str = "";
         for (var op_key in this.output_obj) {
             if (this.output_obj.hasOwnProperty(op_key)) {
                 var domObj = this.output_obj[op_key];
                 var tagName = domObj.localName;
-
+                var addedClassName = domObj.getAttribute("data-style-class");
+                
                 if (domObj.innerText.trim() != "") {
                     op_str += (tagName == 'code') ? '<pre>' : '';
-                    op_str += '<' + tagName + '>';
+                    op_str += (addedClassName != null) ? '<' + tagName + ' class="language-'+ addedClassName +'">' : '<' + tagName + '>';
                     op_str += domObj.innerText;
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
@@ -301,11 +326,9 @@
         this.editor_components.innerHTML = '';
         this.output_obj = {};
     }
- }());
+}());
  
- var editor = new editor({
+var editor = new editor({
     "container": "editor",
     "show_controls": ["heading", "paragraph", "image", "video", "code"]
- });
- 
- 
+});

@@ -149,6 +149,12 @@
             }
             console.log(_this.output_obj);
         });
+
+        paragraph_ele.addEventListener("paste", function (e) {
+            e.preventDefault();
+            var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand("insertText", false, text);
+        });
         
         _this.editor_components.append(paragraph_ele);
         paragraph_ele.focus();
@@ -282,7 +288,7 @@
             code_ele.addEventListener("paste", function (e) {
                 e.preventDefault();
                 var text = (e.originalEvent || e).clipboardData.getData('text/plain');
-                document.execCommand("insertHTML", false, text);
+                document.execCommand("insertText", false, text);
             });
             
             pre_ele.appendChild(code_ele);

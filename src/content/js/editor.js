@@ -6,6 +6,13 @@
         this.heading_ctrls = {};
         this.add_paragraph_btn = document.createElement("li");
         this.add_image_btn = document.createElement("li");
+        this.upload_image_label = document.createElement("label");
+        this.upload_image_file_ctrl = document.createElement("input");
+        this.upload_image_file_ctrl.setAttribute("type", "file");
+        
+        this.ul_comps = document.createElement("ul");
+        this.li_remove = document.createElement("li");
+
         this.add_video_btn = document.createElement("li");
         this.add_code_btn = document.createElement("li");
         this.editor_components = document.createElement("div");
@@ -44,6 +51,9 @@
         
         build_controls.call(this);
         apply_events.call(this);
+
+        create_editor_comp_ctrls.call(this);
+        apply_events_comp_ctrls.call(this);
     }
     
     function build_controls() {
@@ -78,7 +88,9 @@
         }
         
         if (isCustomCtrl && this.options.show_controls.indexOf("image") != -1 || !isCustomCtrl) {
-            this.add_image_btn.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M18 20H4V6h9V4H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9h-2v9zm-7.79-3.17l-1.96-2.36L5.5 18h11l-3.54-4.71zM20 4V1h-2v3h-3c.01.01 0 2 0 2h3v2.99c.01.01 2 0 2 0V6h3V4h-3z"/></svg>Image</span>';
+            this.upload_image_label.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M18 20H4V6h9V4H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-9h-2v9zm-7.79-3.17l-1.96-2.36L5.5 18h11l-3.54-4.71zM20 4V1h-2v3h-3c.01.01 0 2 0 2h3v2.99c.01.01 2 0 2 0V6h3V4h-3z"/></svg>Image</span>';
+            this.upload_image_label.appendChild(this.upload_image_file_ctrl);
+            this.add_image_btn.appendChild(this.upload_image_label);
             ctrls_ul.appendChild(this.add_image_btn);
         }
         
@@ -128,8 +140,8 @@
         paragraph_ele.setAttribute("class", "__paragraph __placeholder");
         console.log(paragraph_ele.innerHTML);
         paragraph_ele.innerHTML = "";
-       
-       _this.output_obj[_uuid] = paragraph_ele;
+        
+        _this.output_obj[_uuid] = paragraph_ele;
        
         paragraph_ele.addEventListener("keypress", function(e) {
             //ADD NEW <P> ELEMENT
@@ -147,7 +159,6 @@
             } else {
                 e.target.classList.add("__placeholder");
             }
-            console.log(_this.output_obj);
         });
 
         paragraph_ele.addEventListener("paste", function (e) {
@@ -155,8 +166,13 @@
             var text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand("insertText", false, text);
         });
+
+        paragraph_ele.addEventListener("focus", function() {
+            position_comp_ctrls(_this, paragraph_ele, _uuid);
+        });
         
-        _this.editor_components.append(paragraph_ele);
+        // _this.editor_components.append(paragraph_ele);
+        update_editor_components.call(_this);
         paragraph_ele.focus();
     }
     
@@ -181,15 +197,37 @@
             } else {
             e.target.classList.add("__placeholder");
             }
-            console.log(_this.output_obj);
         });
 
         hding_ele.addEventListener("focus", function() {
-            console.log("ele is focused");
+            position_comp_ctrls(_this, hding_ele, _uuid);
         });
         
-        _this.editor_components.append(hding_ele);
+        update_editor_components.call(_this);
         hding_ele.focus();
+    }
+
+    function create_uuid(op_counter) {
+        return Math.random().toString(36).substring(2, 15) + op_counter;
+    }
+
+    function add_image(_this, image_url) {
+        var _uuid = create_uuid(_this.options.output_counter);
+        _this.options.output_counter += 1;
+
+        //CREATE NEW DIV ELEMENT AND INSIDE IT IMG ELEMENT
+        var div_ele = document.createElement("div");
+        div_ele.classList.add("img_panel")
+        var img_ele = document.createElement("img");
+        img_ele.setAttribute("src", image_url);
+        div_ele.appendChild(img_ele);
+
+        div_ele.addEventListener("click", function() {
+            position_comp_ctrls(_this, div_ele, _uuid);
+        });
+        
+        _this.output_obj[_uuid] = div_ele;
+        update_editor_components.call(_this);
     }
 
     function calculate_offset(el) {
@@ -198,9 +236,15 @@
         scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         return { top: rect.top + scrollTop, left: rect.left + scrollLeft }
     }
+    
+    function position_comp_ctrls(_this, e, uuid) {
+        var position = calculate_offset(e);
+        _this.ul_comps.style["top"] = (position.top - 30) + "px";
+        _this.ul_comps.style["left"] = position.left + "px";
+        _this.ul_comps.classList.remove("__hide");
 
-    function position_focused_ctrls() {
-        
+        //SET ATTRIBUTES
+        _this.li_remove.setAttribute("data-uuid", uuid);
     }
     
     function apply_events() {
@@ -218,8 +262,25 @@
             add_paragraph(_this);
         });
         
-        this.add_image_btn.addEventListener("click", function() {
-            console.log("add image");
+        this.upload_image_file_ctrl.addEventListener("change", function(e) {
+            //SEND XHR REQUEST
+            var data = new FormData();
+            data.append('media', e.target.files[0]);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', _this.options.file_upload_url, true);
+            xhr.setRequestHeader('authtoken', '79D45B0D-990F-4517-B676-8DF835CECDBF');
+            xhr.onload = function () {
+                if (this.responseText !== "") {
+                    var response = JSON.parse(this.responseText);
+                    if (response.media_link) {
+                        add_image(_this, response.media_link);
+                    } else {
+                        alert("Error while uploading media");
+                    }
+                }
+            };
+            xhr.send(data);
         });
         
         this.add_video_btn.addEventListener("click", function() {
@@ -290,6 +351,10 @@
                 var text = (e.originalEvent || e).clipboardData.getData('text/plain');
                 document.execCommand("insertText", false, text);
             });
+
+            code_ele.addEventListener("focus", function() {
+                position_comp_ctrls(_this, code_ele, _uuid);
+            });
             
             pre_ele.appendChild(code_ele);
             _this.editor_components.append(pre_ele);
@@ -301,6 +366,42 @@
         if (event.which == '13') {
             event.preventDefault();
         }
+    }
+
+    function update_editor_components() {
+        var _childNodes = this.editor_components.childNodes;
+
+        for (var i = 0; i < _childNodes.length; i++) {
+            this.editor_components.removeChild(_childNodes[i]);
+        }
+        
+        for (var uuid in this.output_obj) {
+            this.editor_components.appendChild(this.output_obj[uuid]);
+        }
+    }
+
+    function delete_component(_this, uuid) {
+        delete _this.output_obj[uuid];
+        update_editor_components.call(_this);
+        _this.ul_comps.classList.add("__hide");
+    }
+
+    function create_editor_comp_ctrls() {
+        this.ul_comps.classList.add("__hide");
+        this.ul_comps.classList.add("__editor_comp_ctrls");
+
+        this.li_remove.innerHTML = "Remove";
+        this.ul_comps.appendChild(this.li_remove);
+        
+        this.editor_container.appendChild(this.ul_comps);
+    }
+
+    function apply_events_comp_ctrls() {
+        var _this = this;
+        this.li_remove.addEventListener("click", function(e) {
+            var _uuid = e.target.getAttribute("data-uuid");
+            delete_component(_this, _uuid);
+        });
     }
     
     editor.prototype.get_html = function () {
@@ -318,9 +419,17 @@
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
                 }
+
+                if (tagName === 'div' && domObj.className === 'img_panel') {
+                    op_str += domObj.outerHTML;
+                }
             }
         }
         return op_str;
+    }
+
+    editor.prototype.set_html = function(htmlStr) {
+        
     }
 
     editor.prototype.clear = function() {
@@ -336,5 +445,7 @@
  
 var editor = new editor({
     "container": "editor",
-    "show_controls": ["heading", "paragraph", "image", "video", "code"]
+    "show_controls": ["heading", "paragraph", "image", "code"],
+    "headings": ["h2", "h3", "h4", "h5"],
+    "file_upload_url": "http://localhost/devsheet/app/api/v2/upload/media.php"
 });

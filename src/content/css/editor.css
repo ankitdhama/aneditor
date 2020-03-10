@@ -1,17 +1,3 @@
-* {
-margin: 0;
-padding: 0;
-}
-
-body {
-    font-family: Arial, Helvetica, Sans-Serif;
-}
-
-.container {
-    max-width: 900px;
-    margin: 50px auto;
-}
-
 .__editor_container {
     margin: 0;
     padding: 0;
@@ -201,18 +187,18 @@ body {
     max-width: 100%;
 }
 
-.__editor_container .__editor_comp_ctrls {
+.__editor_comp_ctrls {
     position: absolute;
     background: #fff;
     box-shadow: 0 0 3px 0 #aaa;
     border-radius: 1px;
 }
 
-.__editor_container .__editor_comp_ctrls.__hide {
+.__editor_comp_ctrls.__hide {
     display: none;
 }
 
-.__editor_container .__editor_comp_ctrls li {
+.__editor_comp_ctrls li {
     list-style: none;
     font-size: 13px;
     padding: 6px 20px;

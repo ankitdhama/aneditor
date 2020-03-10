@@ -269,7 +269,14 @@
 
             var xhr = new XMLHttpRequest();
             xhr.open('POST', _this.options.file_upload_url, true);
-            xhr.setRequestHeader('authtoken', '79D45B0D-990F-4517-B676-8DF835CECDBF');
+            
+            //SET UPLOAD FILE URL HEADERS
+            if (typeof _this.options.file_upload_headers !== "undefined") {
+                _this.options.file_upload_headers.forEach(function(header) {
+                    xhr.setRequestHeader(header.name, header.value);
+                });
+            }
+            
             xhr.onload = function () {
                 if (this.responseText !== "") {
                     var response = JSON.parse(this.responseText);
@@ -329,14 +336,11 @@
             pre_ele.appendChild(select_wrapper);
             
             lang_select_ele.addEventListener("change", function() {
-                code_ele.setAttribute("data-style-class", this.value);
+                pre_ele.setAttribute("data-style-class", this.value);
             });
             
             code_ele.setAttribute("contenteditable", "true");
             code_ele.setAttribute("class", "__code __placeholder");
-            
-            _this.output_obj[_uuid] = code_ele;
-            _this.ctrl_validation_flags[_uuid] = false;
             
             code_ele.addEventListener("keyup", function(e) {
                 if (e.target.textContent.trim() != "") {
@@ -358,7 +362,11 @@
             
             pre_ele.appendChild(code_ele);
             _this.editor_components.append(pre_ele);
+
             code_ele.focus();
+
+            _this.output_obj[_uuid] = pre_ele;
+            _this.ctrl_validation_flags[_uuid] = false;
         });
     }
     
@@ -393,7 +401,7 @@
         this.li_remove.innerHTML = "Remove";
         this.ul_comps.appendChild(this.li_remove);
         
-        this.editor_container.appendChild(this.ul_comps);
+        document.getElementsByTagName("body")[0].appendChild(this.ul_comps);
     }
 
     function apply_events_comp_ctrls() {
@@ -409,13 +417,13 @@
         for (var op_key in this.output_obj) {
             if (this.output_obj.hasOwnProperty(op_key)) {
                 var domObj = this.output_obj[op_key];
-                var tagName = domObj.localName;
+                var tagName = (domObj.localName === 'pre') ? 'code' : domObj.localName;
                 var addedClassName = domObj.getAttribute("data-style-class");
                 
                 if (domObj.innerText.trim() != "") {
                     op_str += (tagName == 'code') ? '<pre>' : '';
                     op_str += (addedClassName != null) ? '<' + tagName + ' class="language-'+ addedClassName +'">' : '<' + tagName + '>';
-                    op_str += domObj.innerText;
+                    op_str += (tagName == 'code') ? domObj.children[1].innerText : domObj.innerText;
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
                 }
@@ -442,10 +450,3 @@
         this.output_obj = {};
     }
 }());
- 
-var editor = new editor({
-    "container": "editor",
-    "show_controls": ["heading", "paragraph", "image", "code"],
-    "headings": ["h2", "h3", "h4", "h5"],
-    "file_upload_url": "http://localhost/devsheet/app/api/v2/upload/media.php"
-});

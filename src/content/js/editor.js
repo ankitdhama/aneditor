@@ -423,11 +423,11 @@
                 if (domObj.innerText.trim() != "") {
                     op_str += (tagName == 'code') ? '<pre>' : '';
                     op_str += (addedClassName != null) ? '<' + tagName + ' class="language-'+ addedClassName +'">' : '<' + tagName + '>';
-                    op_str += (tagName == 'code') ? domObj.children[1].innerText : domObj.innerText;
+                    op_str += (tagName == 'code') ? domObj.children[1].innerText.replace(/</g, "&lt;").replace(/>/g, "&gt;") : domObj.innerText;
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
                 }
-
+                
                 if (tagName === 'div' && domObj.className === 'img_panel') {
                     op_str += domObj.outerHTML;
                 }
@@ -435,7 +435,7 @@
         }
         return op_str;
     }
-
+    
     editor.prototype.set_html = function(htmlStr) {
         
     }

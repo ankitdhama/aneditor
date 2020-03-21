@@ -15,6 +15,8 @@
 
         this.add_video_btn = document.createElement("li");
         this.add_code_btn = document.createElement("li");
+        this.add_link_btn = document.createElement("li");
+
         this.editor_components = document.createElement("div");
         this.ctrl_validation_flags = {};
         
@@ -102,6 +104,11 @@
         if (isCustomCtrl && this.options.show_controls.indexOf("code") != -1 || !isCustomCtrl) {
             this.add_code_btn.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Code</span>';
             ctrls_ul.appendChild(this.add_code_btn);
+        }
+
+        if (isCustomCtrl && this.options.show_controls.indexOf("link") != -1 || !isCustomCtrl) {
+            this.add_link_btn.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg>Link</span>';
+            ctrls_ul.appendChild(this.add_link_btn);
         }
 
         //MAKE FOCUSED ELEMENT OPTIONS
@@ -227,6 +234,28 @@
         });
         
         _this.output_obj[_uuid] = div_ele;
+        update_editor_components.call(_this);
+    }
+
+    function add_link(_this) {
+        var _uuid = create_uuid(_this.options.output_counter);
+        _this.options.output_counter += 1;
+
+        var link_wrapper = document.createElement("div");
+        link_wrapper.classList.add("__link_wrapper");
+        
+        var link_name = document.createElement("input");
+        link_name.setAttribute("placeholder", "Link name");
+        link_name.classList.add("__link_name");
+
+        var link_url = document.createElement("input");
+        link_url.setAttribute("placeholder", "Link url");
+        link_url.classList.add("__link_url");
+
+        link_wrapper.appendChild(link_name);
+        link_wrapper.appendChild(link_url);
+
+        _this.output_obj[_uuid] = link_wrapper;
         update_editor_components.call(_this);
     }
 
@@ -368,6 +397,10 @@
             _this.output_obj[_uuid] = pre_ele;
             _this.ctrl_validation_flags[_uuid] = false;
         });
+
+        this.add_link_btn.addEventListener("click", function() {
+            add_link(_this);
+        });
     }
     
     function disable_enter_key(event) {
@@ -419,16 +452,18 @@
                 var domObj = this.output_obj[op_key];
                 var tagName = (domObj.localName === 'pre') ? 'code' : domObj.localName;
                 var addedClassName = domObj.getAttribute("data-style-class");
-                
-                if (domObj.innerText.trim() != "") {
+
+                if (domObj.innerText.trim() != "" &&
+                    !domObj.classList.contains("__link_wrapper")
+                ) {
                     op_str += (tagName == 'code') ? '<pre>' : '';
                     op_str += (addedClassName != null) ? '<' + tagName + ' class="language-'+ addedClassName +'">' : '<' + tagName + '>';
                     op_str += (tagName == 'code') ? domObj.children[1].innerText.replace(/</g, "&lt;").replace(/>/g, "&gt;") : domObj.innerText;
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
-                }
-                
-                if (tagName === 'div' && domObj.className === 'img_panel') {
+                } else if ( domObj.classList.contains("__link_wrapper") ) {
+                    op_str += '<a href="'+ domObj.children[1].value +'">'+ domObj.children[0].value +'</a>';
+                } else if (tagName === 'div' && domObj.className === 'img_panel') {
                     op_str += domObj.outerHTML;
                 }
             }

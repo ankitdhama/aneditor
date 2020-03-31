@@ -71,13 +71,22 @@
 }
 
 .__editor_container .__editor_components .__heading,
-.__editor_container .__editor_components .__paragraph {
+.__editor_container .__editor_components .__paragraph,
+.__editor_container .__editor_components .__html_content {
     position: relative;
     margin-bottom: 20px;
 }
 
+.__editor_container .__editor_components .__html_content {
+    background: #f2f2f2;;
+    padding: 10px;
+    line-height: 22px;
+    font-size: 15px;
+}
+
 .__editor_container .__editor_components .__heading.__placeholder:after,
-.__editor_container .__editor_components .__paragraph.__placeholder:after {
+.__editor_container .__editor_components .__paragraph.__placeholder:after
+.__editor_container .__editor_components .__html_content.__placeholder:after {
     position: absolute;
     left: 0;
     top: 0;
@@ -90,6 +99,10 @@
 
 .__editor_container .__editor_components .__paragraph.__placeholder:after {
     content: "Enter paragraph here";
+}
+
+.__editor_container .__editor_components .__html_content.__placeholder:after {
+    content: "Enter html here";
 }
 
 .__editor_container .__editor_components .__heading:hover, 
@@ -188,7 +201,7 @@
 }
 
 .__editor_container .__editor_components .__link_wrapper {
-    
+    margin-bottom: 20px;
 }
 
 .__editor_container .__editor_components .__link_wrapper input {

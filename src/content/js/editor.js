@@ -16,6 +16,7 @@
         this.add_video_btn = document.createElement("li");
         this.add_code_btn = document.createElement("li");
         this.add_link_btn = document.createElement("li");
+        this.add_html_btn = document.createElement("li");
 
         this.editor_components = document.createElement("div");
         this.ctrl_validation_flags = {};
@@ -111,6 +112,12 @@
             ctrls_ul.appendChild(this.add_link_btn);
         }
 
+        
+        if (isCustomCtrl && this.options.show_controls.indexOf("html") != -1 || !isCustomCtrl) {
+            this.add_html_btn.innerHTML = '<span><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 0 24 24" width="24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>HTML</span>';
+            ctrls_ul.appendChild(this.add_html_btn);
+        }
+
         //MAKE FOCUSED ELEMENT OPTIONS
         this.remove_ele_ctrl.textContent = "&times;";
         this.focused_elems_ctrls.appendChild(this.remove_ele_ctrl);
@@ -182,6 +189,39 @@
         update_editor_components.call(_this);
         paragraph_ele.focus();
     }
+
+    function add_html(_this) {
+        var _uuid = Math.random().toString(36).substring(2, 15) + _this.options.output_counter;
+        _this.options.output_counter += 1;
+
+        var html_content_ele = document.createElement("div");
+        html_content_ele.setAttribute("contenteditable", "true");
+        html_content_ele.setAttribute("class", "__html_content __placeholder");
+        html_content_ele.innerHTML = "";
+        
+        _this.output_obj[_uuid] = html_content_ele;
+
+        html_content_ele.addEventListener("keyup", function(e) {
+            if (e.target.textContent.trim() != "") {
+                e.target.classList.remove("__placeholder");
+            } else {
+                e.target.classList.add("__placeholder");
+            }
+        });
+       
+        html_content_ele.addEventListener("paste", function (e) {
+            e.preventDefault();
+            var text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand("insertText", false, text);
+        });
+
+        html_content_ele.addEventListener("focus", function() {
+            position_comp_ctrls(_this, html_content_ele, _uuid);
+        });
+
+        update_editor_components.call(_this);
+        html_content_ele.focus();
+    }
     
     function add_heading(heading_type, _this) {
         var _uuid = Math.random().toString(36).substring(2, 15) + _this.options.output_counter;
@@ -240,7 +280,7 @@
     function add_link(_this) {
         var _uuid = create_uuid(_this.options.output_counter);
         _this.options.output_counter += 1;
-
+        
         var link_wrapper = document.createElement("div");
         link_wrapper.classList.add("__link_wrapper");
         
@@ -254,6 +294,10 @@
 
         link_wrapper.appendChild(link_name);
         link_wrapper.appendChild(link_url);
+
+        link_wrapper.addEventListener("click", function() {
+            position_comp_ctrls(_this, link_wrapper, _uuid);
+        });
 
         _this.output_obj[_uuid] = link_wrapper;
         update_editor_components.call(_this);
@@ -290,6 +334,10 @@
         this.add_paragraph_btn.addEventListener("click", function() {
             add_paragraph(_this);
         });
+
+        this.add_html_btn.addEventListener("click", function() {
+            add_html(_this);
+        });
         
         this.upload_image_file_ctrl.addEventListener("change", function(e) {
             //SEND XHR REQUEST
@@ -315,7 +363,7 @@
                         alert("Error while uploading media");
                     }
                 }
-            };
+            }
             xhr.send(data);
         });
         
@@ -454,17 +502,30 @@
                 var addedClassName = domObj.getAttribute("data-style-class");
 
                 if (domObj.innerText.trim() != "" &&
-                    !domObj.classList.contains("__link_wrapper")
+                    !domObj.classList.contains("__link_wrapper") &&
+                    !domObj.classList.contains("__html_content")
                 ) {
                     op_str += (tagName == 'code') ? '<pre>' : '';
                     op_str += (addedClassName != null) ? '<' + tagName + ' class="language-'+ addedClassName +'">' : '<' + tagName + '>';
-                    op_str += (tagName == 'code') ? domObj.children[1].innerText.replace(/</g, "&lt;").replace(/>/g, "&gt;") : domObj.innerText;
+                    
+                    if (tagName == 'code') {
+                        domObj.childNodes.forEach( function(node) {
+                            if (node.localName === 'code' && node.className === '__code') {
+                                op_str += node.innerText.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                            }
+                        } )
+                    } else {
+                        op_str += domObj.innerText
+                    }
+                    
                     op_str += '</' + tagName + '>';
                     op_str += (tagName == 'code') ? '</pre>' : '';
                 } else if ( domObj.classList.contains("__link_wrapper") ) {
                     op_str += '<a href="'+ domObj.children[1].value +'">'+ domObj.children[0].value +'</a>';
                 } else if (tagName === 'div' && domObj.className === 'img_panel') {
                     op_str += domObj.outerHTML;
+                } else if ( domObj.classList.contains("__html_content") ) {
+                    op_str += '<div class="__html">' + domObj.innerText + '</div>';
                 }
             }
         }
